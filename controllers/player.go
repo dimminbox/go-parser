@@ -14,6 +14,9 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+const ATP_PLAYERS_LIST_URL = "https://www.atpworldtour.com/en/rankings/singles?countryCode=all&rankRange="
+const MYSCORE_PLAYERS_LIST_URL = "https://www.myscore.ru/tennis/rankings/atp/"
+
 func GetWorldPlayers(count int) (Players []model.Player) {
 
 	tr := &http.Transport{
@@ -22,7 +25,7 @@ func GetWorldPlayers(count int) (Players []model.Player) {
 		DisableCompression: true,
 	}
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(model.ATP_PLAYERS_LIST_URL + "0-" + strconv.Itoa(count))
+	res, err := client.Get(ATP_PLAYERS_LIST_URL + "0-" + strconv.Itoa(count))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +73,7 @@ func GetMyscorePlayers(Players []model.Player) (Players1 []model.Player) {
 	}
 	client := &http.Client{Transport: tr}
 
-	res, err := client.Get(model.MYSCORE_PLAYERS_LIST_URL)
+	res, err := client.Get(MYSCORE_PLAYERS_LIST_URL)
 	if err != nil {
 		log.Fatal(err)
 	}

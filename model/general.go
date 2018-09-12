@@ -14,8 +14,6 @@ var Connect *gorm.DB
 
 const ATP_PLAYERS_URL = "https://www.atpworldtour.com"
 const MYSCORE_PLAYERS_URL = "https://www.myscore.ru"
-const ATP_PLAYERS_LIST_URL = "https://www.atpworldtour.com/en/rankings/singles?countryCode=all&rankRange="
-const MYSCORE_PLAYERS_LIST_URL = "https://www.myscore.ru/tennis/rankings/atp/"
 
 //Configuration - структура конфигурации микросервиса
 type Configuration struct {
