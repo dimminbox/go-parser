@@ -37,7 +37,6 @@ func Tournaments(year int) {
 		exTournaments[_tournament.Tennisworld] = _tournament
 	}
 
-	fmt.Println(exTournaments)
 	for _, tournament := range tournaments {
 		if exTournament, ok := exTournaments[tournament.Tennisworld]; ok {
 			tournament.ID = exTournament.ID

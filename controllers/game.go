@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/asaskevich/govalidator"
 )
 
-const GAME_URL = "http://www.atpworldtour.com"
+const GAME_URL = "https://www.atpworldtour.com"
 
 func Games(year int) {
 
@@ -21,23 +22,91 @@ func Games(year int) {
 	games := []model.Game{}
 	model.Connect.Where("year = ?", year).Find(&tournaments)
 
-	tournaments = tournaments[150:151]
+	//tournaments = tournaments[150:151]
+	exGames := map[string]model.Game{}
+	_exGames := []model.Game{}
 	for _, tournament := range tournaments {
-		games = append(games, parserGames(tournament.Tennisworld)...)
+
+		model.Connect.Where("Tournir = ?", tournament.ID).
+			Find(&_exGames)
+		for _, exGame := range _exGames {
+			exGames[exGame.URL] = exGame
+		}
+
+		games = append(games, parserGames(tournament)...)
+
 	}
 
 	ch := make(chan model.Game)
 
-	games = games[0:1]
-	//fmt.Printf("%+v\n", games)
-	for _, game := range games {
+	for i, game := range games {
 		go parserGame(game, ch)
-		time.Sleep(1000 * time.Millisecond)
+
+		if i%100 == 0 {
+			fmt.Printf("%s\n", "pause")
+			time.Sleep(10000 * time.Millisecond)
+		} else {
+			time.Sleep(1000 * time.Millisecond)
+		}
+	}
+
+	var _players []model.Player
+	players := map[string]int{}
+	model.Connect.Find(&_players)
+
+	for _, player := range _players {
+		players[player.Code] = player.ID
+	}
+
+	//fmt.Printf("%+v", exGames)
+
+	for i := 0; i < len(games); i++ {
+		game := <-ch
+
+		if _exGame, ok := exGames[game.URL]; ok {
+			game.ID = _exGame.ID
+		}
+
+		hrefArr1 := strings.Split(game.PlayerURL1, "/")
+		hrefArr2 := strings.Split(game.PlayerURL2, "/")
+
+		var code1 string
+		if len(hrefArr1) > 3 {
+			code1 = hrefArr1[len(hrefArr1)-2]
+		} else {
+			code1 = ""
+		}
+
+		var code2 string
+		if len(hrefArr2) > 3 {
+			code2 = hrefArr2[len(hrefArr2)-2]
+		} else {
+			code2 = ""
+		}
+
+		if ID, ok := players[code1]; ok {
+			game.Player1 = ID
+		}
+
+		if ID, ok := players[code2]; ok {
+			game.Player2 = ID
+		}
+
+		_, err := govalidator.ValidateStruct(game)
+
+		if err == nil {
+			//fmt.Printf("%d - %s \n", game.ID, game.URL)
+			model.Connect.Save(&game)
+		} else {
+			fmt.Printf("%s\n", game.PlayerURL1)
+			fmt.Println(err)
+		}
+
 	}
 
 }
 
-func parserGames(url string) (games []model.Game) {
+func parserGames(tournament model.Tournament) (games []model.Game) {
 
 	games = []model.Game{}
 
@@ -48,7 +117,7 @@ func parserGames(url string) (games []model.Game) {
 	}
 	client := &http.Client{Transport: tr}
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", tournament.Tennisworld, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
 	res, err := client.Do(req)
 	if err == nil {
@@ -59,7 +128,7 @@ func parserGames(url string) (games []model.Game) {
 			if err2 == nil {
 
 				doc.Find("table.day-table tbody tr").Each(func(i int, s *goquery.Selection) {
-					game := model.Game{}
+					game := model.Game{Tournir: tournament.ID, Winner: 1}
 					s.Find("td.day-table-seed span").Each(func(i int, s *goquery.Selection) {
 
 						r := strings.NewReplacer("(", "", ")", "", " ", "")
@@ -121,6 +190,17 @@ func parserGame(game model.Game, ch chan model.Game) {
 						duration := hours*60 + minutes
 						game.Duration = duration
 					}
+				})
+
+				r := strings.NewReplacer("es", "en", "de", "en", "pt", "en")
+				doc.Find("div.player-left-name a").Each(func(i int, s *goquery.Selection) {
+					game.PlayerURL1, _ = s.Attr("href")
+					game.PlayerURL1 = GAME_URL + r.Replace(game.PlayerURL1)
+				})
+
+				doc.Find("div.player-right-name a").Each(func(i int, s *goquery.Selection) {
+					game.PlayerURL2, _ = s.Attr("href")
+					game.PlayerURL2 = GAME_URL + r.Replace(game.PlayerURL2)
 				})
 
 				doc.Find("tr.match-stats-row").Eq(1).Find("td.match-stats-number-left").Each(func(i int, s *goquery.Selection) {
@@ -223,6 +303,30 @@ func parserGame(game model.Game, ch chan model.Game) {
 					game.ReturnGamesPlayed2, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
 				})
 
+				doc.Find("tr.match-stats-row").Eq(13).Find("td.match-stats-number-left span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.ServicePointsWon1, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
+				doc.Find("tr.match-stats-row").Eq(13).Find("td.match-stats-number-right span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.ServicePointsWon2, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
+				doc.Find("tr.match-stats-row").Eq(14).Find("td.match-stats-number-left span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.ReturnPointsWon1, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
+				doc.Find("tr.match-stats-row").Eq(14).Find("td.match-stats-number-right span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.ReturnPointsWon2, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
+				doc.Find("tr.match-stats-row").Eq(15).Find("td.match-stats-number-left span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.TotalPointsWon1, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
+				doc.Find("tr.match-stats-row").Eq(15).Find("td.match-stats-number-right span").Eq(0).Each(func(i int, s *goquery.Selection) {
+					game.TotalPointsWon2, _ = strconv.Atoi(strings.TrimSpace(strings.Replace(s.Text(), "%", "", -1)))
+				})
+
 			} else {
 				log.Println(err1)
 			}
@@ -231,8 +335,6 @@ func parserGame(game model.Game, ch chan model.Game) {
 	} else {
 		log.Println(err)
 	}
-
-	fmt.Printf("%#v\n", game)
 	ch <- game
 
 }

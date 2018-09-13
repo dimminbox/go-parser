@@ -53,10 +53,19 @@ func GetWorldPlayers(count int) (Players []model.Player) {
 			move = move * -1
 		}
 		href, _ := s.Find("td.player-cell a ").Attr("href")
+		hrefArr := strings.Split(href, "/")
+
+		var code string
+		if len(hrefArr) > 3 {
+			code = hrefArr[len(hrefArr)-2]
+		} else {
+			code = ""
+		}
+
 		href = model.ATP_PLAYERS_URL + href
 		r := strings.NewReplacer("\n", "", " ", "", ",", "", "\t", "")
 		points, _ := strconv.Atoi(r.Replace(s.Find("td.points-cell").Text()))
-		Players = append(Players, model.Player{Name: title, Tennisworld: href, Points: points, MoveRank: move, Sex: 1})
+		Players = append(Players, model.Player{Name: title, Tennisworld: href, Points: points, MoveRank: move, Sex: 1, Code: code})
 	})
 
 	return

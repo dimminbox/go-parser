@@ -28,6 +28,7 @@ type Player struct {
 	Points       int    `gorm:"column:points" json:"points"`
 	Titles       int    `gorm:"column:titles" json:"titles"`
 	TitlesCY     int    `gorm:"column:titlesCY" json:"titlesCY"`
+	Code         string `gorm:"column:code" json:"code"`
 }
 
 // TableName sets the insert table name for this struct type
