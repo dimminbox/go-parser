@@ -26,9 +26,11 @@ func main() {
 		controller.Players(COUNT)
 	case "tournament":
 		controller.Tournaments(YEAR)
+	case "game":
+		controller.Games(YEAR)
 	case "all":
-		//controller.Players(COUNT)
-		//controller.Tournaments(YEAR)
+		controller.Players(COUNT)
+		controller.Tournaments(YEAR)
 		controller.Games(YEAR)
 	}
 

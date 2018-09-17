@@ -17,6 +17,14 @@ const GAME_URL = "https://www.atpworldtour.com"
 
 func Games(year int) {
 
+	var _players []model.Player
+	players := map[string]int{}
+	model.Connect.Find(&_players)
+
+	for _, player := range _players {
+		players[player.Code] = player.ID
+	}
+
 	var tournaments []model.Tournament
 
 	games := []model.Game{}
@@ -33,76 +41,68 @@ func Games(year int) {
 			exGames[exGame.URL] = exGame
 		}
 
-		games = append(games, parserGames(tournament)...)
+		ch := make(chan model.Game)
+		games = parserGames(tournament)
 
-	}
+		for i, game := range games {
+			fmt.Println(game.URL)
+			go parserGame(game, ch)
 
-	ch := make(chan model.Game)
-
-	for i, game := range games {
-		go parserGame(game, ch)
-
-		if i%100 == 0 {
-			fmt.Printf("%s\n", "pause")
-			time.Sleep(10000 * time.Millisecond)
-		} else {
-			time.Sleep(1000 * time.Millisecond)
-		}
-	}
-
-	var _players []model.Player
-	players := map[string]int{}
-	model.Connect.Find(&_players)
-
-	for _, player := range _players {
-		players[player.Code] = player.ID
-	}
-
-	//fmt.Printf("%+v", exGames)
-
-	for i := 0; i < len(games); i++ {
-		game := <-ch
-
-		if _exGame, ok := exGames[game.URL]; ok {
-			game.ID = _exGame.ID
+			if i%50 == 0 {
+				fmt.Printf("%s\n", "pause")
+				time.Sleep(1000 * time.Millisecond)
+			} else {
+				time.Sleep(800 * time.Millisecond)
+			}
 		}
 
-		hrefArr1 := strings.Split(game.PlayerURL1, "/")
-		hrefArr2 := strings.Split(game.PlayerURL2, "/")
+		for i := 0; i < len(games); i++ {
+			game := <-ch
 
-		var code1 string
-		if len(hrefArr1) > 3 {
-			code1 = hrefArr1[len(hrefArr1)-2]
-		} else {
-			code1 = ""
-		}
+			if _exGame, ok := exGames[game.URL]; ok {
+				game.ID = _exGame.ID
+			}
 
-		var code2 string
-		if len(hrefArr2) > 3 {
-			code2 = hrefArr2[len(hrefArr2)-2]
-		} else {
-			code2 = ""
-		}
+			hrefArr1 := strings.Split(game.PlayerURL1, "/")
+			hrefArr2 := strings.Split(game.PlayerURL2, "/")
 
-		if ID, ok := players[code1]; ok {
-			game.Player1 = ID
-		}
+			var code1 string
+			if len(hrefArr1) > 3 {
+				code1 = hrefArr1[len(hrefArr1)-2]
+			} else {
+				code1 = ""
+			}
 
-		if ID, ok := players[code2]; ok {
-			game.Player2 = ID
-		}
+			var code2 string
+			if len(hrefArr2) > 3 {
+				code2 = hrefArr2[len(hrefArr2)-2]
+			} else {
+				code2 = ""
+			}
 
-		_, err := govalidator.ValidateStruct(game)
+			if ID, ok := players[code1]; ok {
+				game.Player1 = ID
+			}
 
-		if err == nil {
-			//fmt.Printf("%d - %s \n", game.ID, game.URL)
-			model.Connect.Save(&game)
-		} else {
-			fmt.Printf("%s\n", game.PlayerURL1)
-			fmt.Println(err)
+			if ID, ok := players[code2]; ok {
+				game.Player2 = ID
+			}
+
+			_, err := govalidator.ValidateStruct(game)
+
+			if err == nil {
+				//fmt.Printf("%d - %s \n", game.ID, game.URL)
+				model.Connect.Save(&game)
+			} else {
+				fmt.Printf("%s\n", game.PlayerURL1)
+				fmt.Println(err)
+			}
+
 		}
 
 	}
+
+	time.Sleep(1000 * time.Millisecond)
 
 }
 
