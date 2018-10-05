@@ -45,7 +45,7 @@ func Games(year int) {
 		games = parserGames(tournament)
 
 		for i, game := range games {
-			fmt.Println(game.URL)
+			//fmt.Println(game.URL)
 			go parserGame(game, ch)
 
 			if i%50 == 0 {
@@ -80,12 +80,12 @@ func Games(year int) {
 				code2 = ""
 			}
 
-			if ID, ok := players[code1]; ok {
-				game.Player1 = ID
+			if ID1, ok1 := players[code1]; ok1 {
+				game.Player1 = ID1
 			}
 
-			if ID, ok := players[code2]; ok {
-				game.Player2 = ID
+			if ID2, ok2 := players[code2]; ok2 {
+				game.Player2 = ID2
 			}
 
 			_, err := govalidator.ValidateStruct(game)
@@ -94,7 +94,9 @@ func Games(year int) {
 				//fmt.Printf("%d - %s \n", game.ID, game.URL)
 				model.Connect.Save(&game)
 			} else {
-				fmt.Printf("%s\n", game.PlayerURL1)
+				fmt.Printf("Code 1 %s\n", code1)
+				fmt.Printf("Code 2 %s\n", code2)
+				fmt.Printf("Game URL %s\n", game.URL)
 				fmt.Println(err)
 			}
 
