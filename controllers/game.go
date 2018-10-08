@@ -92,6 +92,10 @@ func Games(year int) {
 				game.Player2 = ID2
 			}
 
+			/*
+				здесь будет код который будет искать этот матч среди всех матчей турнира c myscore
+			*/
+
 			fmt.Println(game)
 			os.Exit(1)
 			_, err := govalidator.ValidateStruct(game)
