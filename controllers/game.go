@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"parser/model"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -108,6 +110,114 @@ func Games(year int) {
 
 }
 
+func parserGamesMsc(res *http.Response) {
+
+	type Match struct {
+		Url     string
+		Player1 string
+		Player2 string
+		Date    time.Time
+	}
+
+	matches := map[string][]Match{}
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err == nil {
+
+		doc.Find("div#tournament-page-data-results").Each(func(i int, s *goquery.Selection) {
+			body := s.Text()
+			chunks := strings.Split(body, "~AA÷")
+
+			r1, _ := regexp.Compile(`¬ER÷(.+)¬RW÷`)
+			r2, _ := regexp.Compile(`(.+)¬AD÷`)
+
+			for _, chunk := range chunks {
+
+				stages := r1.FindStringSubmatch(chunk)
+				urls := r2.FindStringSubmatch(chunk)
+
+				if (len(stages) == 2) && (len(urls) == 2) {
+					url := "https://www.myscore.ru/match/" + urls[1] + "/"
+					stage := stages[1]
+
+					if _, ok := matches[stage]; ok {
+						matches[stage] = append(matches[stage], Match{Url: url})
+					} else {
+						matches[stage] = make([]Match, 0, 0)
+						matches[stage] = append(matches[stage], Match{Url: url})
+					}
+				}
+
+			}
+
+		})
+
+		client := &http.Client{}
+
+		r3, _ := regexp.Compile(`window\.open\(\'(.+)\'\)`)
+		r4, _ := regexp.Compile(`g2utime\s\=\s(\d+)\;`)
+
+		for stage, _matches := range matches {
+
+			for index, match := range _matches {
+
+				req, _ := http.NewRequest("GET", match.Url, nil)
+				req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
+				res, err := client.Do(req)
+				if err == nil {
+					defer res.Body.Close()
+					if res.StatusCode == 200 {
+
+						doc, err2 := goquery.NewDocumentFromReader(res.Body)
+
+						if err2 == nil {
+							doc.Find("div.tname__text a").Each(func(i int, s *goquery.Selection) {
+								href, _ := s.Attr("onclick")
+
+								playerUrl := r3.FindStringSubmatch(href)
+
+								if len(playerUrl) == 2 {
+
+									if i == 0 {
+										matches[stage][index].Player1 = "https://www.myscore.ru" + playerUrl[1]
+									}
+
+									if i == 1 {
+										matches[stage][index].Player2 = "https://www.myscore.ru" + playerUrl[1]
+									}
+
+								}
+
+							})
+
+						}
+						html, _ := doc.Html()
+						matchTime := r4.FindStringSubmatch(html)
+						if len(matchTime) == 2 {
+
+							_date, err := strconv.ParseInt(matchTime[1], 10, 64)
+							if err != nil {
+								panic(err)
+							}
+
+							matches[stage][index].Date = time.Unix(_date, 0)
+						}
+					}
+				}
+			}
+
+		}
+
+		/*doc.Find("table.tennis tbody tr.stage-finished").Each(func(i int, s *goquery.Selection) {
+			id, _ := s.Attr("id")
+			id = strings.Replace(id, "g_2_", "", -1)
+			matches[stage] = append(matches[stage], "https://www.myscore.ru/match/"+id+"/")
+		})*/
+
+	}
+	fmt.Println(matches)
+	os.Exit(1)
+}
+
 func parserGames(tournament model.Tournament) (games []model.Game) {
 
 	games = []model.Game{}
@@ -129,30 +239,41 @@ func parserGames(tournament model.Tournament) (games []model.Game) {
 			doc, err2 := goquery.NewDocumentFromReader(res.Body)
 			if err2 == nil {
 
-				doc.Find("table.day-table tbody tr").Each(func(i int, s *goquery.Selection) {
-					game := model.Game{Tournir: tournament.ID, Winner: 1}
-					s.Find("td.day-table-seed span").Each(func(i int, s *goquery.Selection) {
+				reqMsc, _ := http.NewRequest("GET", tournament.Myscore, nil)
+				resMsc, errMsc := client.Do(reqMsc)
+				if errMsc == nil {
+					defer resMsc.Body.Close()
+					if resMsc.StatusCode == 200 {
 
-						r := strings.NewReplacer("(", "", ")", "", " ", "")
-						if i == 0 {
-							game.Status1 = r.Replace(strings.TrimSpace(s.Text()))
-						} else if i == 1 {
-							game.Status2 = r.Replace(strings.TrimSpace(s.Text()))
-						}
-					})
+						parserGamesMsc(resMsc)
 
-					s.Find("td.day-table-score a").Each(func(i int, s *goquery.Selection) {
-						href, _ := s.Attr("href")
-						game.URL = GAME_URL + href
+						doc.Find("table.day-table tbody tr").Each(func(i int, s *goquery.Selection) {
+							game := model.Game{Tournir: tournament.ID, Winner: 1}
+							s.Find("td.day-table-seed span").Each(func(i int, s *goquery.Selection) {
 
-						score := strings.Replace(strings.TrimSpace(s.Text()), " ", ";", -1)
-						game.Scores = score
+								r := strings.NewReplacer("(", "", ")", "", " ", "")
+								if i == 0 {
+									game.Status1 = r.Replace(strings.TrimSpace(s.Text()))
+								} else if i == 1 {
+									game.Status2 = r.Replace(strings.TrimSpace(s.Text()))
+								}
+							})
 
-					})
+							s.Find("td.day-table-score a").Each(func(i int, s *goquery.Selection) {
+								href, _ := s.Attr("href")
+								game.URL = GAME_URL + href
 
-					games = append(games, game)
+								score := strings.Replace(strings.TrimSpace(s.Text()), " ", ";", -1)
+								game.Scores = score
 
-				})
+							})
+
+							games = append(games, game)
+
+						})
+
+					}
+				}
 			} else {
 				log.Println(err2)
 			}

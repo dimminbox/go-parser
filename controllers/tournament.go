@@ -93,6 +93,12 @@ func parserTournament(tournament model.Tournament, ch chan model.Tournament) {
 			doc, err2 := goquery.NewDocumentFromReader(res.Body)
 			if err2 == nil {
 
+				codeMyscore := ""
+				myscoreArr := strings.Split(strings.Replace(strings.ToLower(tournament.Tennisworld), " ", "-", -1), "/")
+				if len(myscoreArr) > 6 {
+					codeMyscore = myscoreArr[6]
+				}
+
 				doc.Find("span.tourney-dates").Each(func(i int, s *goquery.Selection) {
 					dates := strings.Split(strings.TrimSpace(s.Text()), "-")
 
@@ -112,19 +118,25 @@ func parserTournament(tournament model.Tournament, ch chan model.Tournament) {
 						case "250":
 							tournament.Type = "ATP 250"
 							tournament.Hospitality = 1
+							tournament.Myscore = "https://www.myscore.ru/tennis/atp-singles/" + codeMyscore + "-" + strconv.Itoa(tournament.Year) + "/results/"
 						case "500":
 							tournament.Type = "ATP 500"
 							tournament.Hospitality = 1
+							tournament.Myscore = "https://www.myscore.ru/tennis/atp-singles/" + codeMyscore + "-" + strconv.Itoa(tournament.Year) + "/results/"
 						case "grandslam":
 							tournament.Type = "Grand Slam"
 							tournament.Hospitality = 1
+							tournament.Myscore = "https://www.myscore.ru/tennis/atp-singles/" + codeMyscore + "-" + strconv.Itoa(tournament.Year) + "/results/"
 						case "1000s":
 							tournament.Type = "ATP 1000"
 							tournament.Hospitality = 1
+							tournament.Myscore = "https://www.myscore.ru/tennis/atp-singles/" + codeMyscore + "-" + strconv.Itoa(tournament.Year) + "/results/"
 						case "ATP Challenger", "challenger":
 							tournament.Type = "ATP Challenger"
+							tournament.Myscore = "https://www.myscore.ru/tennis/challenger-men-singles/" + codeMyscore + "-" + strconv.Itoa(tournament.Year) + "/results/"
+						default:
+							tournament.Hospitality = 1
 						}
-
 					}
 
 				})
