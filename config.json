@@ -4,7 +4,7 @@
     "User": "root",
     "Password": "u9yIITHNQ",
     "DbURI": "root:Iil1Eshee]@tcp(localhost:3306)/go",
-    "IsDebug": true,
+    "IsDebug": false,
     "Resources" : "/home/dimm/go/src/parser/static/"
 
 }

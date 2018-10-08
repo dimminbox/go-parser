@@ -30,6 +30,7 @@ func Games(year int) {
 	var tournaments []model.Tournament
 
 	games := []model.Game{}
+	matches := map[string][]Match{}
 	model.Connect.Where("year = ?", year).Find(&tournaments)
 
 	//tournaments = tournaments[150:151]
@@ -44,8 +45,9 @@ func Games(year int) {
 		}
 
 		ch := make(chan model.Game)
-		games = parserGames(tournament)
+		games, matches = parserGames(tournament)
 
+		fmt.Println(matches)
 		for i, game := range games {
 			//fmt.Println(game.URL)
 			go parserGame(game, ch)
@@ -90,6 +92,8 @@ func Games(year int) {
 				game.Player2 = ID2
 			}
 
+			fmt.Println(game)
+			os.Exit(1)
 			_, err := govalidator.ValidateStruct(game)
 
 			if err == nil {
@@ -110,14 +114,14 @@ func Games(year int) {
 
 }
 
-func parserGamesMsc(res *http.Response) {
+type Match struct {
+	Url     string
+	Player1 int
+	Player2 int
+	Date    time.Time
+}
 
-	type Match struct {
-		Url     string
-		Player1 string
-		Player2 string
-		Date    time.Time
-	}
+func parserGamesMsc(res *http.Response) (mathes map[string][]Match) {
 
 	matches := map[string][]Match{}
 	doc, err := goquery.NewDocumentFromReader(res.Body)
@@ -129,6 +133,8 @@ func parserGamesMsc(res *http.Response) {
 
 			r1, _ := regexp.Compile(`¬ER÷(.+)¬RW÷`)
 			r2, _ := regexp.Compile(`(.+)¬AD÷`)
+			r3, _ := regexp.Compile(`window\.open\(\'(.+)\'\)`)
+			r4, _ := regexp.Compile(`g2utime\s\=\s(\d+)\;`)
 
 			for _, chunk := range chunks {
 
@@ -139,11 +145,65 @@ func parserGamesMsc(res *http.Response) {
 					url := "https://www.myscore.ru/match/" + urls[1] + "/"
 					stage := stages[1]
 
+					match := Match{Url: url}
+
+					client := &http.Client{}
+					req, _ := http.NewRequest("GET", match.Url, nil)
+					req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
+					res, err := client.Do(req)
+					if err == nil {
+						defer res.Body.Close()
+						if res.StatusCode == 200 {
+
+							doc, err2 := goquery.NewDocumentFromReader(res.Body)
+
+							if err2 == nil {
+								doc.Find("div.tname__text a").Each(func(i int, s *goquery.Selection) {
+									href, _ := s.Attr("onclick")
+
+									playerUrl := r3.FindStringSubmatch(href)
+									if len(playerUrl) == 2 {
+
+										var exPlayer model.Player
+										model.Connect.Where("myscore = ?", "https://www.myscore.ru"+playerUrl[1]).Find(&exPlayer)
+
+										if exPlayer.ID != 0 {
+
+											if i == 0 {
+												match.Player1 = exPlayer.ID
+											}
+
+											if i == 1 {
+												match.Player2 = exPlayer.ID
+											}
+
+										}
+
+									}
+
+								})
+
+								html, _ := doc.Html()
+								matchTime := r4.FindStringSubmatch(html)
+								if len(matchTime) == 2 {
+
+									_date, err := strconv.ParseInt(matchTime[1], 10, 64)
+									if err != nil {
+										panic(err)
+									}
+
+									match.Date = time.Unix(_date, 0)
+								}
+							}
+
+						}
+					}
+
 					if _, ok := matches[stage]; ok {
-						matches[stage] = append(matches[stage], Match{Url: url})
+						matches[stage] = append(matches[stage], match)
 					} else {
 						matches[stage] = make([]Match, 0, 0)
-						matches[stage] = append(matches[stage], Match{Url: url})
+						matches[stage] = append(matches[stage], match)
 					}
 				}
 
@@ -151,76 +211,15 @@ func parserGamesMsc(res *http.Response) {
 
 		})
 
-		client := &http.Client{}
-
-		r3, _ := regexp.Compile(`window\.open\(\'(.+)\'\)`)
-		r4, _ := regexp.Compile(`g2utime\s\=\s(\d+)\;`)
-
-		for stage, _matches := range matches {
-
-			for index, match := range _matches {
-
-				req, _ := http.NewRequest("GET", match.Url, nil)
-				req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
-				res, err := client.Do(req)
-				if err == nil {
-					defer res.Body.Close()
-					if res.StatusCode == 200 {
-
-						doc, err2 := goquery.NewDocumentFromReader(res.Body)
-
-						if err2 == nil {
-							doc.Find("div.tname__text a").Each(func(i int, s *goquery.Selection) {
-								href, _ := s.Attr("onclick")
-
-								playerUrl := r3.FindStringSubmatch(href)
-
-								if len(playerUrl) == 2 {
-
-									if i == 0 {
-										matches[stage][index].Player1 = "https://www.myscore.ru" + playerUrl[1]
-									}
-
-									if i == 1 {
-										matches[stage][index].Player2 = "https://www.myscore.ru" + playerUrl[1]
-									}
-
-								}
-
-							})
-
-						}
-						html, _ := doc.Html()
-						matchTime := r4.FindStringSubmatch(html)
-						if len(matchTime) == 2 {
-
-							_date, err := strconv.ParseInt(matchTime[1], 10, 64)
-							if err != nil {
-								panic(err)
-							}
-
-							matches[stage][index].Date = time.Unix(_date, 0)
-						}
-					}
-				}
-			}
-
-		}
-
-		/*doc.Find("table.tennis tbody tr.stage-finished").Each(func(i int, s *goquery.Selection) {
-			id, _ := s.Attr("id")
-			id = strings.Replace(id, "g_2_", "", -1)
-			matches[stage] = append(matches[stage], "https://www.myscore.ru/match/"+id+"/")
-		})*/
-
 	}
-	fmt.Println(matches)
-	os.Exit(1)
+
+	return matches
 }
 
-func parserGames(tournament model.Tournament) (games []model.Game) {
+func parserGames(tournament model.Tournament) (games []model.Game, matches map[string][]Match) {
 
 	games = []model.Game{}
+	matches = map[string][]Match{}
 
 	tr := &http.Transport{
 		MaxIdleConns:       10,
@@ -245,7 +244,7 @@ func parserGames(tournament model.Tournament) (games []model.Game) {
 					defer resMsc.Body.Close()
 					if resMsc.StatusCode == 200 {
 
-						parserGamesMsc(resMsc)
+						matches = parserGamesMsc(resMsc)
 
 						doc.Find("table.day-table tbody tr").Each(func(i int, s *goquery.Selection) {
 							game := model.Game{Tournir: tournament.ID, Winner: 1}
