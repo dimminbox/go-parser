@@ -89,7 +89,7 @@ func Games(year int) {
 		games, gamesMsc := parserGames(tournament)
 
 		for i, game := range games {
-			//fmt.Println(game.URL)
+			fmt.Println(game.URL)
 			go parserGame(game, ch)
 
 			if i%50 == 0 {
@@ -132,10 +132,10 @@ func Games(year int) {
 				game.Player2 = ID2
 			}
 
-			/*
-				здесь будет код который будет искать этот матч среди всех матчей турнира c myscore
-			*/
-			game = getMscMatch(game, gamesMsc)
+			//если дата матча пустая - то пытаемся отжать её из myscore
+			if game.DateEvent.IsZero() {
+				game = getMscMatch(game, gamesMsc)
+			}
 
 			_, err := govalidator.ValidateStruct(game)
 
@@ -148,8 +148,6 @@ func Games(year int) {
 				fmt.Printf("Game URL %s\n", game.URL)
 				fmt.Println(err)
 			}
-
-			fmt.Printf("%+v", game)
 
 		}
 
