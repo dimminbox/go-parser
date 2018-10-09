@@ -30,8 +30,8 @@ func main() {
 		controller.Games(YEAR)
 	case "all":
 		YEAR = 2017
-		/*controller.Players(COUNT)
-		controller.Tournaments(YEAR)*/
+		controller.Players(COUNT)
+		controller.Tournaments(YEAR)
 		controller.Games(YEAR)
 	}
 

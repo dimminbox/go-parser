@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"parser/model"
 	"regexp"
 	"strconv"
@@ -17,6 +16,50 @@ import (
 
 const GAME_URL = "https://www.atpworldtour.com"
 
+type Match struct {
+	Url     string
+	Player1 int
+	Player2 int
+	Date    time.Time
+}
+
+type Matches map[string][]Match
+
+func getMscMatch(game model.Game, gamesMsc Matches) (gameFull model.Game) {
+
+	relStage := map[string]string{
+		"Финал":                   "Finals",
+		"Полуфиналы":              "Semi-Finals",
+		"Четвертьфиналы":          "Quarter-Finals",
+		"1/8 финала":              "Round of 16",
+		"1/16":                    "Round of 32",
+		"1/32":                    "Round of 64",
+		"1/64 финала":             "Round of 128",
+		"Квалификация Финал":      "2nd Round Qualifying",
+		"Квалификация Полуфиналы": "1nd Round Qualifying",
+	}
+
+	for stageMsc, gamesMsc := range gamesMsc {
+
+		if stage, ok := relStage[stageMsc]; ok {
+
+			if stage == game.Stage {
+
+				for _, gameMsc := range gamesMsc {
+
+					if (gameMsc.Player1 == game.Player1 && gameMsc.Player2 == game.Player2) ||
+						(gameMsc.Player1 == game.Player2 && gameMsc.Player2 == game.Player1) {
+						game.DateEvent = gameMsc.Date
+						game.Myscore = gameMsc.Url
+					}
+
+				}
+
+			}
+		}
+	}
+	return game
+}
 func Games(year int) {
 
 	var _players []model.Player
@@ -29,13 +72,11 @@ func Games(year int) {
 
 	var tournaments []model.Tournament
 
-	games := []model.Game{}
-	matches := map[string][]Match{}
 	model.Connect.Where("year = ?", year).Find(&tournaments)
 
 	//tournaments = tournaments[150:151]
 	exGames := map[string]model.Game{}
-	_exGames := []model.Game{}
+	var _exGames []model.Game
 	for _, tournament := range tournaments {
 
 		model.Connect.Where("Tournir = ?", tournament.ID).
@@ -45,9 +86,8 @@ func Games(year int) {
 		}
 
 		ch := make(chan model.Game)
-		games, matches = parserGames(tournament)
+		games, gamesMsc := parserGames(tournament)
 
-		fmt.Println(matches)
 		for i, game := range games {
 			//fmt.Println(game.URL)
 			go parserGame(game, ch)
@@ -95,9 +135,8 @@ func Games(year int) {
 			/*
 				здесь будет код который будет искать этот матч среди всех матчей турнира c myscore
 			*/
+			game = getMscMatch(game, gamesMsc)
 
-			fmt.Println(game)
-			os.Exit(1)
 			_, err := govalidator.ValidateStruct(game)
 
 			if err == nil {
@@ -110,19 +149,14 @@ func Games(year int) {
 				fmt.Println(err)
 			}
 
+			fmt.Printf("%+v", game)
+
 		}
 
 	}
 
 	time.Sleep(1000 * time.Millisecond)
 
-}
-
-type Match struct {
-	Url     string
-	Player1 int
-	Player2 int
-	Date    time.Time
 }
 
 func parserGamesMsc(res *http.Response) (mathes map[string][]Match) {
@@ -139,15 +173,25 @@ func parserGamesMsc(res *http.Response) (mathes map[string][]Match) {
 			r2, _ := regexp.Compile(`(.+)¬AD÷`)
 			r3, _ := regexp.Compile(`window\.open\(\'(.+)\'\)`)
 			r4, _ := regexp.Compile(`g2utime\s\=\s(\d+)\;`)
+			r5, _ := regexp.Compile(`~ZA÷ATP(.+)`)
 
+			cvalType := ""
 			for _, chunk := range chunks {
 
+				cval := r5.FindStringSubmatch(chunk)
+				if len(cval) == 2 {
+					if strings.Contains(cval[1], "квалификация") {
+						cvalType = "Квалификация "
+					} else {
+						cvalType = ""
+					}
+				}
 				stages := r1.FindStringSubmatch(chunk)
 				urls := r2.FindStringSubmatch(chunk)
 
 				if (len(stages) == 2) && (len(urls) == 2) {
 					url := "https://www.myscore.ru/match/" + urls[1] + "/"
-					stage := stages[1]
+					stage := cvalType + stages[1]
 
 					match := Match{Url: url}
 
@@ -216,14 +260,13 @@ func parserGamesMsc(res *http.Response) (mathes map[string][]Match) {
 		})
 
 	}
-
 	return matches
 }
 
-func parserGames(tournament model.Tournament) (games []model.Game, matches map[string][]Match) {
+func parserGames(tournament model.Tournament) (games []model.Game, matches Matches) {
 
 	games = []model.Game{}
-	matches = map[string][]Match{}
+	matches = Matches{}
 
 	tr := &http.Transport{
 		MaxIdleConns:       10,
