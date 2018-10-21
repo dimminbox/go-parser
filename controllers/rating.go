@@ -28,7 +28,7 @@ func GetRating() {
 	for beginDate.Unix() < time.Now().Unix() {
 
 		var dateUpdate string
-		beginDate = beginDate.AddDate(-0, 0, 1)
+		beginDate = beginDate.AddDate(-1, 0, 0)
 
 		if beginDate.Weekday().String() == "Monday" {
 
