@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"parser/model"
 	"regexp"
 	"strconv"
@@ -36,7 +35,6 @@ func GetRating() {
 			dateUpdate = beginDate.Format("2006-01-02")
 
 			fmt.Println(dateUpdate)
-			os.Exit(1)
 			var _exRatings []model.Rating
 			model.Connect.Where("dateUpdate = ?", dateUpdate).Find(&_exRatings)
 			exRatings := map[string]int{}
