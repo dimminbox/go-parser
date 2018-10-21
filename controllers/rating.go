@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"parser/model"
 	"regexp"
 	"strconv"
@@ -16,8 +17,7 @@ const RATING_URL = "https://www.atpworldtour.com/en/rankings/singles"
 
 func GetRating() {
 
-	beginDate := time.Now().AddDate(0, -1, 0)
-	//duration := time.Now().Sub(beginDate)
+	beginDate := time.Now().AddDate(0, -12, 0)
 
 	var _exPlayers []model.Player
 	model.Connect.Find(&_exPlayers)
@@ -29,13 +29,14 @@ func GetRating() {
 	for beginDate.Unix() < time.Now().Unix() {
 
 		var dateUpdate string
-		beginDate = beginDate.AddDate(-1, 0, 0)
+		beginDate = beginDate.AddDate(0, 0, 1)
 
 		if beginDate.Weekday().String() == "Monday" {
 
 			dateUpdate = beginDate.Format("2006-01-02")
 
 			fmt.Println(dateUpdate)
+			os.Exit(1)
 			var _exRatings []model.Rating
 			model.Connect.Where("dateUpdate = ?", dateUpdate).Find(&_exRatings)
 			exRatings := map[string]int{}
