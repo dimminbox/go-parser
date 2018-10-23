@@ -16,7 +16,7 @@ const RATING_URL = "https://www.atpworldtour.com/en/rankings/singles"
 
 func GetRating() {
 
-	beginDate := time.Now().AddDate(0, -12, 0)
+	beginDate := time.Now().AddDate(0, 0, -14)
 
 	var _exPlayers []model.Player
 	model.Connect.Find(&_exPlayers)
