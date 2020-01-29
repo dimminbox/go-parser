@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"parser/model"
-	"time"
+	"strconv"
 	"strings"
+	"time"
+	"os"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -54,11 +56,26 @@ func GetWomens(date string, page int) (Players []model.Women) {
 			code = ""
 		}
 
+		rank, _ := strconv.Atoi(strings.Replace(s.Find("td.rank").Text(), ".", "", -1))
+
+		move, _ := strconv.Atoi(s.Find("td.prevrank > div").Text())
+		direction, _ := s.Find("td.prevrank > div").Attr("class")
+		if direction == "oup" {
+			move = move
+		}
+		if direction == "odown" {
+			move = -move
+		}
+
+		points, _ := strconv.Atoi(s.Find("td.long-point").Text())
 		player := model.Women{
 			Tennisexplorer: BASE_URL + href,
 			Name:           item.Text(),
 			Country:        s.Find("td.tl").Text(),
-			Code : code,
+			Code:           code,
+			Rank:           rank,
+			MoveRank:       move,
+			Points: 		points,
 		}
 		Players = append(Players, player)
 	})
@@ -72,8 +89,8 @@ func Womens(date string) {
 
 	for i := 1; i < LIMIT; i++ {
 		players = append(players, GetWomens(date, i)...)
+		//fmt.Printf("%+v",players)
 	}
-
 
 	var _exPlayers []model.Women
 	model.Connect.Find(&_exPlayers)
@@ -89,10 +106,20 @@ func Womens(date string) {
 		}
 		model.Connect.Save(&player)
 		fmt.Printf("%d - %s \n", player.ID, player.Name)
+
+		rating := &model.WomenRating{
+			Player : player.ID,
+			Rating : player.Rank,
+			DateUpdate : date,
+			Points : player.Points,
+		}
+		model.Connect.Save(&rating)
 	}
 
 	/*for _, player := range players{
 		model.Connect.Save(&player)
 	}*/
+
+	os.Exit(1)
 
 }
