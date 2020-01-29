@@ -3,8 +3,8 @@
     "Host": "localhost",
     "User": "root",
     "Password": "u9yIITHNQ",
-    "DbURI": "root:Iil1Eshee]@tcp(localhost:3306)/go?parseTime=true",
-    "IsDebug": false,
+    "DbURI": "root:Iil1Eshee]@tcp(localhost:3306)/tennis?parseTime=true",
+    "IsDebug": true,
     "Resources" : "/home/dimm/go/src/parser/static/"
 
 }
