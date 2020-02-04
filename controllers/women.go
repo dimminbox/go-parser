@@ -85,6 +85,13 @@ func GetWomens(date string, page int) (Players []model.Women) {
 
 func Womens(date string) {
 
+	t, _ := time.Parse("2006-01-02", date)
+	
+	if t.Weekday().String() != "Monday" {
+		fmt.Println("Weekday is not monday!")
+		os.Exit(0)
+	}
+
 	players := []model.Women{}
 
 	for i := 1; i < LIMIT; i++ {
