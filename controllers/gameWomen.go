@@ -3,22 +3,42 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"parser/model"
 	"strings"
 	"time"
-	"os"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 func GamesWomen() {
+
+	var _exPlayers []model.Women
+	model.Connect.Find(&_exPlayers)
+
+	exPlayers := map[string]model.Women{}
+	for _, player := range _exPlayers {
+		exPlayers[player.Code] = player
+	}
+
+	var _exGames []model.WomenGame
+	model.Connect.Find(&_exPlayers)
+
+	exGames := map[int]model.WomenGame{}
+	for _, item := range _exGames {
+		exGames[item.ID] = item
+	}
+
 	var year = time.Now().Year()
 	var womens []model.Women
 	model.Connect.Find(&womens)
 	for _, player := range womens {
 		games := parserGamesWomen(year, player.Tennisexplorer)
 		for _, item := range games {
-			fmt.Printf("%+v\n", item.Scores)
+			item.Player1 = exPlayers[item.PlayerCode1].ID
+			item.Player2 = exPlayers[item.PlayerCode2].ID
+			model.Connect.Save(&item)
+			fmt.Printf("%+v\n", item)
 		}
 		os.Exit(1)
 	}
@@ -64,22 +84,26 @@ func parserGamesWomen(year int, url string) (games []model.WomenGame) {
 							}
 						})
 
-						score := s.Find("td.tl")
+						score := s.Find("td.tl > a")
 						matchURL, _ := score.Attr("href")
 
 						var scoreResult []string
-						scores := strings.Split(score.Text(),",")
-						for _, set := range scores{
-							_games := strings.Split(strings.Trim(set," "),"-")
-							scoreResult = append(scoreResult, string(_games[0][0]) + string(_games[1][0]))
+						scores := strings.Split(score.Text(), ",")
+						for _, set := range scores {
+							_games := strings.Split(strings.Trim(set, " "), "-")
+							scoreResult = append(scoreResult, string(_games[0][0])+string(_games[1][0]))
 						}
-
+						chunks1 := strings.Split(player1Url, "/")
+						chunks2 := strings.Split(player2Url, "/")
+						var id int
+						fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
 						games = append(games, model.WomenGame{
-							DateEvent:  t1,
-							PlayerURL1: player1Url,
-							PlayerURL2: player2Url,
-							URL:        matchURL,
-							Scores:     strings.Join(scoreResult, ";"),
+							DateEvent:   t1,
+							PlayerCode1: chunks1[2],
+							PlayerCode2: chunks2[2],
+							URL:         matchURL,
+							Scores:      strings.Join(scoreResult, ";"),
+							ID:          id,
 						})
 					}
 				})

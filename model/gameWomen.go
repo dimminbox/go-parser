@@ -5,9 +5,9 @@ import "time"
 type WomenGame struct {
 	ID                     int       `gorm:"column:id;primary_key" json:"id"`
 	Player1                int       `form:"player1" gorm:"column:player1" json:"player1" valid:"required"`
-	PlayerURL1             string    `gorm:"-"`
+	PlayerCode1            string    `gorm:"-"`
 	Status1                string    `gorm:"column:status1" json:"status1"`
-	PlayerURL2             string    `gorm:"-"`
+	PlayerCode2            string    `gorm:"-"`
 	Player2                int       `valid:"required" gorm:"column:player2" json:"player2"`
 	Status2                string    `gorm:"column:status2" json:"status2"`
 	Winner                 int       `valid:"required" gorm:"column:winner" json:"winner"`
@@ -52,5 +52,5 @@ type WomenGame struct {
 
 // TableName sets the insert table name for this struct type
 func (g *WomenGame) TableName() string {
-	return "womenGame"
+	return "gameWomen"
 }
