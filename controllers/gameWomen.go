@@ -115,7 +115,7 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 	return
 }
 
-func GameWomenYear() {
+func GameWomenYear(year int) {
 
 	var _exPlayers []model.Women
 	model.Connect.Find(&_exPlayers)
@@ -132,8 +132,6 @@ func GameWomenYear() {
 	for _, item := range _exGames {
 		exGames[item.ID] = item
 	}
-
-	var year = time.Now().Year()
 	var womens []model.Women
 	model.Connect.Find(&womens)
 	for _, player := range womens {
