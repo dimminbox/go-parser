@@ -197,7 +197,7 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 						scores := strings.Split(score.Text(), ",")
 						for _, set := range scores {
 							_games := strings.Split(strings.Trim(set, " "), "-")
-							if (len(_games) > 0 ) {
+							if len(_games) > 1 {
 								scoreResult = append(scoreResult, string(_games[0][0])+string(_games[1][0]))
 							}
 						}
