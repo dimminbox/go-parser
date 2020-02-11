@@ -168,7 +168,8 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 		if res.StatusCode == 200 {
 			doc, err2 := goquery.NewDocumentFromReader(res.Body)
 			if err2 == nil {
-				doc.Find("table.balance > tbody > tr").Each(func(i int, s *goquery.Selection) {
+				selector := fmt.Sprintf("div#matches-%d-1-data > table.balance > tbody > tr", year)
+				doc.Find(selector).Each(func(i int, s *goquery.Selection) {
 					date := s.Find("td.first").Text()
 					if date != "" {
 						dates := strings.Split(date, ".")
@@ -196,6 +197,7 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 						scores := strings.Split(score.Text(), ",")
 						for _, set := range scores {
 							_games := strings.Split(strings.Trim(set, " "), "-")
+							fmt.Printf("%s %+v\n ",matchURL, _games)
 							scoreResult = append(scoreResult, string(_games[0][0])+string(_games[1][0]))
 						}
 						chunks1 := strings.Split(player1Url, "/")

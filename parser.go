@@ -17,7 +17,7 @@ func main() {
 		DATE   string = time.Now().Format("2006-01-02")
 	)
 
-	flag.StringVar(&METHOD, "m", METHOD, "метод парсинга (rating, player, game, gameWomen, tournament, all, women, gameWomenDay)")
+	flag.StringVar(&METHOD, "m", METHOD, "метод парсинга (rating, player, game, gameWomenYear, tournament, all, women, gameWomenDay)")
 	flag.IntVar(&COUNT, "count", COUNT, "количество записей парсинга")
 	flag.IntVar(&YEAR, "year", YEAR, "год")
 	flag.StringVar(&DATE, "date", DATE, "дата в формате 2006-01-02")
