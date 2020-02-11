@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"parser/model"
 	"strconv"
 	"strings"
@@ -12,7 +11,111 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func GamesWomen() {
+func GameWomenDay(year int, month int, day int) {
+
+	var _exPlayers []model.Women
+	model.Connect.Find(&_exPlayers)
+
+	exPlayers := map[string]model.Women{}
+	for _, player := range _exPlayers {
+		exPlayers[player.Code] = player
+	}
+
+	games := parserGamesWomenDay(year, month, day)
+	for _, item := range games {
+		item.Player1 = exPlayers[item.PlayerCode1].ID
+		item.Player2 = exPlayers[item.PlayerCode2].ID
+		model.Connect.Save(&item)
+		fmt.Printf("%+v\n", item)
+	}
+}
+
+func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame) {
+
+	var _month string
+	if month > 9 {
+		_month = fmt.Sprintf("%d", month)
+	} else {
+		_month = fmt.Sprintf("0%d", month)
+	}
+	dateCur, _ := time.Parse(time.RFC3339, fmt.Sprintf("%d-%s-%dT00:00:01Z", year, _month, day))
+
+	games = []model.WomenGame{}
+	tr := &http.Transport{
+		MaxIdleConns:       10,
+		IdleConnTimeout:    30 * time.Second,
+		DisableCompression: true,
+	}
+	client := &http.Client{Transport: tr}
+	req, _ := http.NewRequest("GET", fmt.Sprintf("https://www.tennisexplorer.com/results/?type=wta-single&year=%d&month=%s&day=%d", year, _month, day), nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
+	res, err := client.Do(req)
+
+	if err == nil {
+		defer res.Body.Close()
+		if res.StatusCode == 200 {
+			doc, err2 := goquery.NewDocumentFromReader(res.Body)
+			if err2 == nil {
+				var id int
+				var matchURL string
+				var game model.WomenGame
+
+				scores := map[int][]int{
+					0: []int{},
+					1: []int{},
+				}
+				doc.Find("table.result > tbody > tr:not(.head)").Each(func(i int, s *goquery.Selection) {
+
+					s.Find("td:last-child > a").Each(func(i int, q *goquery.Selection) {
+						matchURL, _ = q.Attr("href")
+						fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
+					})
+
+					tmpScore := []int{}
+					s.Find("td.score").Each(func(j int, q *goquery.Selection) {
+						val, _ := strconv.Atoi(string(strings.Trim(q.Text(), "&nbsp;")))
+						tmpScore = append(tmpScore, val)
+					})
+
+					href, _ := s.Find("td.t-name > a").Attr("href")
+					chunks := strings.Split(href, "/")
+					if len(chunks) == 4 {
+						if i%2 == 0 {
+							game = model.WomenGame{
+								DateEvent: dateCur,
+								ID:        id,
+								URL:       matchURL,
+							}
+							game.PlayerCode1 = chunks[2]
+							scores[0] = tmpScore
+						} else {
+
+							scores[1] = tmpScore
+							game.PlayerCode2 = chunks[2]
+							for i := range scores[0] {
+								if scores[0][i] != 0 && scores[1][i] != 0 {
+									game.Scores = game.Scores + fmt.Sprintf("%d:%d;", scores[0][i], scores[1][i])
+								}
+							}
+							if game.Scores != "" {
+								games = append(games, game)
+							}
+
+							scores = map[int][]int{
+								0: []int{},
+								1: []int{},
+							}
+						}
+					}
+				})
+			}
+		}
+	}
+
+	return
+}
+
+func GameWomenYear() {
 
 	var _exPlayers []model.Women
 	model.Connect.Find(&_exPlayers)
@@ -35,7 +138,7 @@ func GamesWomen() {
 	model.Connect.Find(&womens)
 	for _, player := range womens {
 
-		games := parserGamesWomen(year, player.Tennisexplorer)
+		games := parserGamesWomenYear(year, player.Tennisexplorer)
 		for _, item := range games {
 			item.Player1 = exPlayers[item.PlayerCode1].ID
 			item.Player2 = exPlayers[item.PlayerCode2].ID
@@ -46,83 +149,7 @@ func GamesWomen() {
 	}
 }
 
-func GetGameWomenDay(year int, month int, day int) (games []model.WomenGame) {
-
-	games = []model.WomenGame{}
-
-	tr := &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-	}
-	client := &http.Client{Transport: tr}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://www.tennisexplorer.com/results/?type=wta-single&year=%d&month=%d&day=%d", year, month, day), nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
-	res, err := client.Do(req)
-
-	if err == nil {
-		defer res.Body.Close()
-		if res.StatusCode == 200 {
-			doc, err2 := goquery.NewDocumentFromReader(res.Body)
-			if err2 == nil {
-				game := model.WomenGame{}
-				doc.Find("td > a:last-child").Each(func(i int, s *goquery.Selection) {
-					matchURL, _ := s.Attr("href")
-					game.URL = matchURL
-
-					var id int
-					fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
-					game.ID = id
-				})
-
-				scores := map[int][]int{
-					0: []int{},
-					1: []int{},
-				}
-				doc.Find("table.result > tbody > tr:not(.head)").Each(func(i int, s *goquery.Selection) {
-
-					tmpScore := []int{}
-
-					s.Find("td.score").Each(func(j int, q *goquery.Selection) {
-						val, _ := strconv.Atoi(string(strings.Trim(q.Text(), "&nbsp;")))
-						tmpScore = append(tmpScore, val)
-					})
-
-					href, _ := s.Find("td.t-name > a").Attr("href")
-					chunks := strings.Split(href, "/")
-					fmt.Println(len(chunks))
-					if len(chunks) == 4 {
-						if i%2 == 0 {
-							game = model.WomenGame{}
-							game.PlayerCode1 = chunks[2]
-							scores[0] = tmpScore
-						} else {
-
-							scores[1] = tmpScore
-							game.PlayerCode2 = chunks[2]
-							for i := range scores[0] {
-								if scores[0][i] != 0 && scores[1][i] != 0 {
-									game.Scores = game.Scores + fmt.Sprintf("%d:%d;", scores[0][i], scores[1][i])
-								}
-							}
-							games = append(games, game)
-
-							scores = map[int][]int{
-								0: []int{},
-								1: []int{},
-							}
-						}
-					}
-
-				})
-				fmt.Printf("%+v\n", games)
-			}
-		}
-		os.Exit(1)
-	}
-	return
-}
-func parserGamesWomen(year int, url string) (games []model.WomenGame) {
+func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 
 	games = []model.WomenGame{}
 

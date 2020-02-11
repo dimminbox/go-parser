@@ -26,15 +26,15 @@ func main() {
 	switch METHOD {
 	case "player":
 		controller.Players(COUNT)
-	case "women":
-		controller.Womens(DATE)
 	case "game":
 		controller.Games(YEAR)
-	case "gameWomen":
-		controller.GamesWomen()
+	case "women":
+		controller.Womens(DATE)
+	case "gameWomenYear":
+		controller.GameWomenYear()
 	case "gameWomenDay":
 		t := time.Now().AddDate(0, 0, -1)
-		controller.GetGameWomenDay(t.Year(), int(t.Month()), t.Day())
+		controller.GameWomenDay(t.Year(), int(t.Month()), t.Day())
 	case "tournament":
 		controller.Tournaments(YEAR)
 	case "rating":
