@@ -35,10 +35,11 @@ func GameWomenToday() {
 
 	model.Connect.Delete(model.GameWomenToday{})
 
+	t := time.Now().AddDate(0, 0, +1)
 	games := []model.GameWomenToday{}
-	month := int(time.Now().Month())
-	year := time.Now().Year()
-	day := time.Now().Day()
+	month := int(t.Month())
+	year := t.Year()
+	day := t.Day()
 
 	var _month string
 	if month > 9 {
@@ -112,7 +113,7 @@ func GameWomenToday() {
 							} else {
 								game.PlayerCode2 = chunks[2]
 								if len(tmpScore) == 5 {
-									if tmpScore[0] == 0 && tmpScore[1] == 0 && game.OddAvg1!= 0 && game.OddAvg2 != 0 {
+									if tmpScore[0] == 0 && tmpScore[1] == 0 && game.OddAvg1 != 0 && game.OddAvg2 != 0 {
 										games = append(games, game)
 									}
 									isFirst = true
