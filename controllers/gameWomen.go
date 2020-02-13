@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"parser/model"
 	"strconv"
@@ -28,6 +29,117 @@ func GameWomenDay(year int, month int, day int) {
 		model.Connect.Save(&item)
 		fmt.Printf("%+v\n", item)
 	}
+}
+
+func GameWomenToday() {
+
+	model.Connect.Delete(model.GameWomenToday{})
+
+	games := []model.GameWomenToday{}
+	month := int(time.Now().Month())
+	year := time.Now().Year()
+	day := time.Now().Day()
+
+	var _month string
+	if month > 9 {
+		_month = fmt.Sprintf("%d", month)
+	} else {
+		_month = fmt.Sprintf("0%d", month)
+	}
+
+	tr := &http.Transport{
+		MaxIdleConns:       10,
+		IdleConnTimeout:    30 * time.Second,
+		DisableCompression: true,
+	}
+	client := &http.Client{Transport: tr}
+	req, _ := http.NewRequest("GET", fmt.Sprintf("https://www.tennisexplorer.com/matches/?type=wta-single&year=%d&month=%s&day=%d", year, _month, day), nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
+	res, err := client.Do(req)
+
+	if err == nil {
+		defer res.Body.Close()
+		if res.StatusCode == 200 {
+			doc, err2 := goquery.NewDocumentFromReader(res.Body)
+			if err2 == nil {
+				var tournir string
+				var id int
+				var matchURL string
+				var game model.GameWomenToday
+				var isFirst bool = true
+
+				doc.Find("table.result > tbody > tr").Each(func(i int, s *goquery.Selection) {
+					class, _ := s.Attr("class")
+					if class == "head flags" {
+						tournir = s.Find("td.t-name > a").Text()
+					} else {
+						tmpScore := []int{}
+						s.Find("td.score").Each(func(j int, q *goquery.Selection) {
+							val, _ := strconv.Atoi(string(strings.Trim(q.Text(), "&nbsp;")))
+							tmpScore = append(tmpScore, val)
+						})
+
+						s.Find("td:last-child > a").Each(func(i int, q *goquery.Selection) {
+							matchURL, _ = q.Attr("href")
+							fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
+						})
+						//fmt.Printf("%+v %s \n", tmpScore, matchURL)
+
+						href, _ := s.Find("td.t-name > a").Attr("href")
+						chunks := strings.Split(href, "/")
+
+						if len(chunks) == 4 {
+							if isFirst {
+
+								game = model.GameWomenToday{
+									DateEvent:   time.Now(),
+									ID:          id,
+									URL:         matchURL,
+									Tournir:     tournir,
+									PlayerCode1: chunks[2],
+								}
+								s.Find("td.course").Each(func(j int, q *goquery.Selection) {
+									if j == 0 {
+										odd, _ := strconv.ParseFloat(q.Text(), 32)
+										game.OddAvg1 = math.Round(odd*100) / 100
+									}
+									if j == 1 {
+										odd, _ := strconv.ParseFloat(q.Text(), 32)
+										game.OddAvg2 = math.Round(odd*100) / 100
+									}
+								})
+								isFirst = false
+							} else {
+								game.PlayerCode2 = chunks[2]
+								if len(tmpScore) == 5 {
+									if tmpScore[0] == 0 && tmpScore[1] == 0 && game.OddAvg1!= 0 && game.OddAvg2 != 0 {
+										games = append(games, game)
+									}
+									isFirst = true
+								}
+							}
+						}
+					}
+				})
+			}
+		}
+	}
+
+	var _exPlayers []model.Women
+	model.Connect.Find(&_exPlayers)
+
+	exPlayers := map[string]model.Women{}
+	for _, player := range _exPlayers {
+		exPlayers[player.Code] = player
+	}
+
+	for _, item := range games {
+		item.Player1 = exPlayers[item.PlayerCode1].ID
+		item.Player2 = exPlayers[item.PlayerCode2].ID
+		model.Connect.Save(&item)
+		fmt.Printf("%+v\n", item)
+	}
+
 }
 
 func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame) {
