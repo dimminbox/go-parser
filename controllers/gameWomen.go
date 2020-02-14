@@ -138,11 +138,18 @@ func GameWomenToday(date string) {
 	for _, item := range games {
 		item.Player1 = exPlayers[item.PlayerCode1].ID
 		item.Player2 = exPlayers[item.PlayerCode2].ID
+		item.OddAvgMy1 , item.OddAvgMy2 = calcGame(item)
 		model.Connect.Save(&item)
 		fmt.Printf("%+v\n", item)
 	}
 
 }
+func calcGame(model.GameWomenToday) (oddAvgMy1 float32, oddAvgMy2 float32) {
+	oddAvgMy1 = 0;
+	oddAvgMy2 = 0;
+	return
+}
+
 
 func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame) {
 
