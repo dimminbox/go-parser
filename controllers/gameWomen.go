@@ -31,11 +31,12 @@ func GameWomenDay(year int, month int, day int) {
 	}
 }
 
-func GameWomenToday() {
+func GameWomenToday(date string) {
 
 	model.Connect.Delete(model.GameWomenToday{})
 
-	t := time.Now().AddDate(0, 0, +1)
+	t, _ := time.Parse("2006-01-02", date)
+
 	games := []model.GameWomenToday{}
 	month := int(t.Month())
 	year := t.Year()

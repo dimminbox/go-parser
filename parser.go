@@ -36,7 +36,7 @@ func main() {
 		t := time.Now().AddDate(0, 0, -1)
 		controller.GameWomenDay(t.Year(), int(t.Month()), t.Day())
 	case "gameWomenToday":
-		controller.GameWomenToday()
+		controller.GameWomenToday(DATE)
 	case "tournament":
 		controller.Tournaments(YEAR)
 	case "rating":
