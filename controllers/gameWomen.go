@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"parser/model"
 	"strconv"
 	"strings"
@@ -32,6 +33,89 @@ func GameWomenDay(year int, month int, day int) {
 }
 
 func GameWomenToday(date string) {
+
+	schema = map[string]map[float32]float32{}
+	schemaLimit = map[string]map[string]OddLimit{
+		"win": map[string]OddLimit{
+			"max": OddLimit{},
+			"min": OddLimit{},
+		},
+		"win2Set": map[string]OddLimit{
+			"max": OddLimit{},
+			"min": OddLimit{},
+		},
+		"lose": map[string]OddLimit{
+			"max": OddLimit{},
+			"min": OddLimit{},
+		},
+	}
+	schema["win"] = map[float32]float32{}
+	schema["win2Set"] = map[float32]float32{}
+	schema["lose"] = map[float32]float32{}
+
+	var scores []model.Score
+	model.Connect.Find(&scores)
+	for _, item := range scores {
+		if item.Result == "Win" {
+
+			if item.Handicap < schemaLimit["win"]["max"].Handi {
+				t := schemaLimit["win"]["max"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["win"]["max"] = t
+			}
+
+			if item.Handicap > schemaLimit["win"]["max"].Handi {
+				t := schemaLimit["win"]["min"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["win"]["min"] = t
+			}
+			schema["win"][item.Handicap] = item.Score
+		}
+		if strings.HasPrefix(item.Result, "Win2set") {
+			if item.Handicap < schemaLimit["win2Set"]["max"].Handi {
+				t := schemaLimit["win2Set"]["max"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["win2Set"]["max"] = t
+			}
+
+			if item.Handicap > schemaLimit["win2Set"]["max"].Handi {
+				t := schemaLimit["win2Set"]["min"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["win2Set"]["min"] = t
+			}
+			schema["win2Set"][item.Handicap] = item.Score
+		}
+
+		if strings.HasPrefix(item.Result, "Lose") {
+			if item.Handicap <= schemaLimit["lose"]["max"].Handi {
+				t := schemaLimit["lose"]["max"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["lose"]["max"] = t
+			}
+
+			if item.Handicap > schemaLimit["lose"]["min"].Handi {
+				t := schemaLimit["lose"]["min"]
+				t.Handi = item.Handicap
+				t.Result = item.Score
+				schemaLimit["lose"]["min"] = t
+			}
+			schema["lose"][item.Handicap] = item.Score
+		}
+	}
+
+	fmt.Printf("%+v", schemaLimit)
+	os.Exit(1)
+	var items []model.GameWomenToday
+	model.Connect.Order("dateEvent desc").Find(&items)
+	for _, item := range items {
+		calcGame(item)
+		os.Exit(1)
+	}
 
 	model.Connect.Delete(model.GameWomenToday{})
 
@@ -138,19 +222,12 @@ func GameWomenToday(date string) {
 	for _, item := range games {
 		item.Player1 = exPlayers[item.PlayerCode1].ID
 		item.Player2 = exPlayers[item.PlayerCode2].ID
-		item.OddAvgMy1 , item.OddAvgMy2 = calcGame(item)
+		item.OddAvgMy1, item.OddAvgMy2 = calcGame(item)
 		model.Connect.Save(&item)
 		fmt.Printf("%+v\n", item)
 	}
 
 }
-func calcGame(model.GameWomenToday) (oddAvgMy1 float32, oddAvgMy2 float32) {
-	oddAvgMy1 = 0;
-	oddAvgMy2 = 0;
-	return
-}
-
-
 func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame) {
 
 	var _month string

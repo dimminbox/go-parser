@@ -117,7 +117,7 @@ func Womens(date string) {
 		rating := &model.WomenRating{
 			Player : player.ID,
 			Rating : player.Rank,
-			DateUpdate : date,
+			DateUpdate : t,
 			Points : player.Points,
 		}
 		model.Connect.Save(&rating)
