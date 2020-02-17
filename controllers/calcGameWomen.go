@@ -131,7 +131,7 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 		if flag {
 			var rating int
 			var ratingDate time.Time
-			if prefix == "win" {
+			if strings.HasPrefix(prefix, "win") {
 				rating = item.Player2Rating
 				ratingDate = item.Player2RatingDate
 			} else {
