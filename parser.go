@@ -14,7 +14,7 @@ func main() {
 		METHOD string = "all"
 		COUNT  int    = 10
 		YEAR   int    = time.Now().Year()
-		ID   int    = 0
+		ID     int    = 0
 		DATE   string = time.Now().Format("2006-01-02")
 	)
 
@@ -37,7 +37,7 @@ func main() {
 	case "calcGame":
 		controller.CalcGame(ID)
 	case "gameWomenDay":
-		t := time.Now().AddDate(0, 0, -1)
+		t := time.Now()
 		controller.GameWomenDay(t.Year(), int(t.Month()), t.Day())
 	case "gameWomenToday":
 		controller.GameWomenToday(DATE)
