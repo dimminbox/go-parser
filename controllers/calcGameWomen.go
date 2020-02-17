@@ -207,7 +207,7 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 			}
 		}
 	}
-
+	fmt.Println("\ndifference ", dif)
 	/*fmt.Printf("%+v\n", schema)
 	fmt.Println(dif)
 	fmt.Println(prefix)
