@@ -6,11 +6,15 @@ type WomenGame struct {
 	ID                     int       `gorm:"column:id;primary_key" json:"id"`
 	Player1                int       `form:"player1" gorm:"column:player1" json:"player1" valid:"required"`
 	Player1Rating          int       `gorm:"-"`
+	Player1RatingDate      time.Time `gorm:"-"`
 	PlayerCode1            string    `gorm:"-"`
+	Player1Name            string    `gorm:"-"`
 	Status1                string    `gorm:"column:status1" json:"status1"`
 	PlayerCode2            string    `gorm:"-"`
+	Player2Name            string    `gorm:"-"`
 	Player2                int       `valid:"required" gorm:"column:player2" json:"player2"`
 	Player2Rating          int       `gorm:"-"`
+	Player2RatingDate      time.Time `gorm:"-"`
 	Status2                string    `gorm:"column:status2" json:"status2"`
 	Winner                 int       `valid:"required" gorm:"column:winner" json:"winner"`
 	DateEvent              time.Time `gorm:"column:dateEvent" json:"dateEvent"`

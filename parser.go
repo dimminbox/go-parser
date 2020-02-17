@@ -14,12 +14,14 @@ func main() {
 		METHOD string = "all"
 		COUNT  int    = 10
 		YEAR   int    = time.Now().Year()
+		ID   int    = 0
 		DATE   string = time.Now().Format("2006-01-02")
 	)
 
-	flag.StringVar(&METHOD, "m", METHOD, "метод парсинга (rating, player, game, gameWomenYear, gameWomenToday, tournament, all, women, gameWomenDay)")
+	flag.StringVar(&METHOD, "m", METHOD, "метод парсинга (rating, player, game, gameWomenYear, gameWomenToday, tournament, all, women, gameWomenDay, calcGame)")
 	flag.IntVar(&COUNT, "count", COUNT, "количество записей парсинга")
 	flag.IntVar(&YEAR, "year", YEAR, "год")
+	flag.IntVar(&ID, "id", ID, "id")
 	flag.StringVar(&DATE, "date", DATE, "дата в формате 2006-01-02")
 	flag.Parse()
 
@@ -32,6 +34,8 @@ func main() {
 		controller.Womens(DATE)
 	case "gameWomenYear":
 		controller.GameWomenYear(YEAR)
+	case "calcGame":
+		controller.CalcGame(ID)
 	case "gameWomenDay":
 		t := time.Now().AddDate(0, 0, -1)
 		controller.GameWomenDay(t.Year(), int(t.Month()), t.Day())

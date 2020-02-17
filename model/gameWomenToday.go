@@ -4,7 +4,7 @@ import "time"
 
 type GameWomenToday struct {
 	ID          int       `gorm:"column:id;primary_key" json:"id"`
-	Player1     int       `form:"player1" gorm:"column:player1" json:"player1" valid:"required"`
+	Player1     int       `form:"player1" gorm:"column:player1" json:"player1"`
 	PlayerCode1 string    `gorm:"-"`
 	PlayerCode2 string    `gorm:"-"`
 	Player2     int       `valid:"required" gorm:"column:player2" json:"player2"`
