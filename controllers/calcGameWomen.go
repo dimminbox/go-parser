@@ -42,7 +42,7 @@ func CalcGame(id int) {
 	}
 
 }
-func calcGame(today model.GameWomenToday) (oddAvgMy1 float32, oddAvgMy2 float32, cnt1 int, cnt2 int ) {
+func calcGame(today model.GameWomenToday) (oddAvgMy1 float32, oddAvgMy2 float32, cnt1 int, cnt2 int) {
 
 	getSchema()
 	fmt.Printf("Рассчёт игры %d\n", today.ID)
@@ -168,6 +168,12 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 	} else {
 
 		for _, set := range sets {
+
+			if len(set) < 2 {
+				flag = false
+				return
+			}
+
 			p1, _ := strconv.Atoi(string(set[0]))
 			p2, _ := strconv.Atoi(string(set[1]))
 			dif += (float32)(p1 - p2)
