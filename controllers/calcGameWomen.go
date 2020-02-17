@@ -124,6 +124,9 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 			continue
 		}
 		sets := strings.Split(item.Scores, ";")
+		if len(sets) == 2 && prefix == "win" {
+			prefix = "win2Set"
+		}
 		result, flag := getValByGame(sets, prefix)
 		if flag {
 			var rating int
@@ -214,9 +217,10 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 		}
 	}
 	fmt.Println("\ndifference ", dif)
-	/*fmt.Printf("%+v\n", schema)
+	/*fmt.Printf("%+v\n", schemaLimit)
 	fmt.Println(dif)
 	fmt.Println(prefix)
-	fmt.Println(result)*/
+	fmt.Println(result)
+	os.Exit(1)*/
 	return
 }
