@@ -176,6 +176,7 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 				flag = false
 				return
 			} else {
+				fmt.Println(p1, p2)
 				dif = (float32)(p1 - p2)
 			}
 
