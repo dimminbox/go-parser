@@ -182,7 +182,7 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 		}
 	} else {
 
-		for _, set := range sets[0:1] {
+		for _, set := range sets {
 
 			if len(set) < 2 {
 				flag = false
