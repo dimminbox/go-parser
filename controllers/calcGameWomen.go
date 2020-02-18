@@ -192,6 +192,7 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 
 			p1, _ := strconv.Atoi(string(set[0]))
 			p2, _ := strconv.Atoi(string(set[1]))
+			fmt.Println(p1, p2)
 			dif += (float32)(p1 - p2)
 		}
 	}
