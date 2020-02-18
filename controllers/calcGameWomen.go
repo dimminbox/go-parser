@@ -155,6 +155,10 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 
 	var dif float32
+	if len(sets) == 0 {
+		flag = false
+		return
+	}
 	// если не доигран даже один сет то игру не берём в рассчтё
 	if len(sets) == 1 {
 		if len(sets[0]) == 2 {
@@ -170,7 +174,7 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 		}
 	} else {
 
-		for _, set := range sets {
+		for _, set := range sets[0:1] {
 
 			if len(set) < 2 {
 				flag = false
