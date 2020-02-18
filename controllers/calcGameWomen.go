@@ -135,6 +135,7 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 		if len(sets) == 2 && prefix == "win" {
 			prefix = "win2Set"
 		}
+		fmt.Printf("%+v", sets)
 		result, flag := getValByGame(sets, prefix)
 		if flag {
 			var rating int
@@ -176,7 +177,6 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 				flag = false
 				return
 			} else {
-				fmt.Println(p1, p2)
 				dif = (float32)(p1 - p2)
 			}
 
@@ -192,7 +192,6 @@ func getValByGame(sets []string, prefix string) (result float32, flag bool) {
 
 			p1, _ := strconv.Atoi(string(set[0]))
 			p2, _ := strconv.Atoi(string(set[1]))
-			fmt.Println(p1, p2)
 			dif += (float32)(p1 - p2)
 		}
 	}
