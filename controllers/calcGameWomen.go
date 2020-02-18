@@ -92,6 +92,7 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 			Where("player = ?", item.Player2).
 			Where("dateUpdate <= ?", item.DateEvent).
 			Order("dateUpdate desc").
+			Order("id desc").
 			Limit(1).
 			Find(&rating2)
 		if rating2.Rating != 0 {
@@ -104,6 +105,7 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 			Where("player = ?", item.Player1).
 			Where("dateUpdate <= ?", item.DateEvent).
 			Order("dateUpdate desc").
+			Order("id desc").
 			Limit(1).
 			Find(&rating1)
 		if rating1.Rating != 0 {
