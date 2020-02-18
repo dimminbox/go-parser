@@ -13,8 +13,13 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func GameWomenDay(year int, month int, day int) {
+func GameWomenDay(date string) {
 
+	t, _ := time.Parse("2006-01-02", date)
+	year := t.Year()
+	month := int(t.Month())
+	day := t.Day()
+	
 	var _exPlayers []model.Women
 	model.Connect.Find(&_exPlayers)
 
