@@ -215,14 +215,16 @@ func GameWomenToday(date string) {
 
 	for _, item := range games {
 		item.Player1 = exPlayers[item.PlayerCode1].ID
+		item.Player1Name = exPlayers[item.PlayerCode1].Name
 		item.Player2 = exPlayers[item.PlayerCode2].ID
+		item.Player2Name = exPlayers[item.PlayerCode2].Name
 		oddAvgMy1, oddAvgMy2, cnt1, cnt2 := calcGame(item)
 		if cnt1 == 10 && cnt2 == 10 {
 			item.OddAvgMy1 = oddAvgMy1
 			item.OddAvgMy2 = oddAvgMy2
 			model.Connect.Save(&item)
 		} else {
-			fmt.Printf("Не хватает игры для раасчёта: cnt1 %d, cnt2 %d\n", cnt1, cnt2)
+			fmt.Printf("Не хватает игры для расчёта: cnt1 %d, cnt2 %d\n", cnt1, cnt2)
 		}
 	}
 	os.Exit(1)
