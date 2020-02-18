@@ -59,8 +59,8 @@ func calcGame(today model.GameWomenToday) (oddAvgMy1 float32, oddAvgMy2 float32,
 
 	oddAvgMy1 = (float32)(math.Round((float64)((res1+res2)/res1*100)) / 100)
 	oddAvgMy2 = (float32)(math.Round((float64)((res1+res2)/res2*100)) / 100)
-	fmt.Printf("\n0.2f, %s - %0.2f cnt1 %d\n", player1.Name, res1, oddAvgMy1, cnt1)
-	fmt.Printf("\n0.2f, %s - %0.2f cnt2 %d\n", player2.Name, res2, oddAvgMy2, cnt2)
+	fmt.Printf("\n%s - %0.2f (%0.2f) cnt1 %d\n", player1.Name, res1, oddAvgMy1, cnt1)
+	fmt.Printf("\n0.2f, %s - %0.2f (%0.2f) cnt2 %d\n", player2.Name, res2, oddAvgMy2, cnt2)
 	return
 }
 
