@@ -125,7 +125,13 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 		if item.Player1Rating == 0 || item.Player2Rating == 0 {
 			continue
 		}
-		sets := strings.Split(item.Scores, ";")
+		_sets := strings.Split(item.Scores, ";")
+		var sets []string
+		for _, _set := range _sets {
+			if _set != "" {
+				sets = append(sets, _set)
+			}
+		}
 		if len(sets) == 2 && prefix == "win" {
 			prefix = "win2Set"
 		}
