@@ -19,7 +19,7 @@ func GameWomenDay(date string) {
 	year := t.Year()
 	month := int(t.Month())
 	day := t.Day()
-	
+
 	var _exPlayers []model.Women
 	model.Connect.Find(&_exPlayers)
 
@@ -278,8 +278,11 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 
 					tmpScore := []int{}
 					s.Find("td.score").Each(func(j int, q *goquery.Selection) {
-						val, _ := strconv.Atoi(string(strings.Trim(q.Text(), "&nbsp;")))
-						tmpScore = append(tmpScore, val)
+						var val int
+						var err error
+						if val, err = strconv.Atoi(string(strings.Trim(q.Text(), " "))); err == nil {
+							tmpScore = append(tmpScore, val)
+						}
 					})
 
 					href, _ := s.Find("td.t-name > a").Attr("href")
@@ -297,10 +300,13 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 
 							scores[1] = tmpScore
 							game.PlayerCode2 = chunks[2]
+
 							for i := range scores[0] {
-								if scores[0][i] != 0 && scores[1][i] != 0 {
-									game.Scores = game.Scores + fmt.Sprintf("%d:%d;", scores[0][i], scores[1][i])
+								if scores[0][i] >= 10 {
+									scores[0][i] = 1
+									scores[1][i] = 0
 								}
+								game.Scores = game.Scores + fmt.Sprintf("%d:%d;", scores[0][i], scores[1][i])
 							}
 							if game.Scores != "" {
 								games = append(games, game)
