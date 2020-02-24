@@ -313,10 +313,10 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 							if game.Scores != "" {
 								games = append(games, game)
 							}
-							if id == 1873433 {
+							/*if id == 1873433 {
 								fmt.Printf("%+v", game.Scores)
 								os.Exit(1)
-							}
+							}*/
 							scores = map[int][]int{
 								0: []int{},
 								1: []int{},
