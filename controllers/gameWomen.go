@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"parser/model"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -373,7 +374,8 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 		DisableCompression: true,
 	}
 	client := &http.Client{Transport: tr}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s?annual=%d", url, year), nil)
+	_url := fmt.Sprintf("%s?annual=%d", url, year)
+	req, _ := http.NewRequest("GET", _url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
 	res, err := client.Do(req)
 
@@ -406,19 +408,42 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 
 						score := s.Find("td.tl > a")
 						matchURL, _ := score.Attr("href")
+						var id int
+						fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
 
 						var scoreResult []string
-						scores := strings.Split(score.Text(), ",")
+
+						r := regexp.MustCompile(`(\<sup\>\w+\<\/sup\>)`)
+						_html, _ := score.Html()
+						_html = r.ReplaceAllString(_html, "")
+						scores := strings.Split(_html, ",")
+
 						for _, set := range scores {
 							_games := strings.Split(strings.Trim(set, " "), "-")
-							if len(_games) > 1 {
-								scoreResult = append(scoreResult, string(_games[0][0])+string(_games[1][0]))
+
+							tmpScore := []int{}
+							for _, _game := range _games {
+								var val int
+								var err error
+								if val, err = strconv.Atoi(string(strings.Trim(_game, " "))); err == nil {
+									tmpScore = append(tmpScore, val)
+								}
+							}
+							if len(tmpScore) > 1 {
+								if tmpScore[0] >= 10 {
+									tmpScore[0] = 1
+									tmpScore[1] = 0
+								}
+								if tmpScore[1] >= 10 {
+									tmpScore[0] = 0
+									tmpScore[1] = 1
+								}
+								scoreResult = append(scoreResult, fmt.Sprintf("%d:%d", tmpScore[0], tmpScore[1]))
 							}
 						}
 						chunks1 := strings.Split(player1Url, "/")
 						chunks2 := strings.Split(player2Url, "/")
-						var id int
-						fmt.Sscanf(matchURL, "/match-detail/?id=%d", &id)
+
 						games = append(games, model.WomenGame{
 							DateEvent:   t1,
 							PlayerCode1: chunks1[2],
@@ -431,7 +456,7 @@ func parserGamesWomenYear(year int, url string) (games []model.WomenGame) {
 				})
 			}
 		} else {
-			fmt.Printf("%+v\n", res)
+			//fmt.Printf("%+v\n", res)
 		}
 	} else {
 		fmt.Printf("%+v\n", err)
