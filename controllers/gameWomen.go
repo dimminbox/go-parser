@@ -252,7 +252,9 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 		DisableCompression: true,
 	}
 	client := &http.Client{Transport: tr}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://www.tennisexplorer.com/results/?type=wta-single&year=%d&month=%s&day=%d", year, _month, day), nil)
+	url := fmt.Sprintf("https://www.tennisexplorer.com/results/?type=wta-single&year=%d&month=%s&day=%d", year, _month, day)
+	url = "https://www.tennisexplorer.com/results/?type=wta-single&year=2020&month=02&day=16"
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
 	res, err := client.Do(req)
 
@@ -311,7 +313,10 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 							if game.Scores != "" {
 								games = append(games, game)
 							}
-
+							if id == 1873433 {
+								fmt.Printf("%+v", game.Scores)
+								os.Exit(1)
+							}
 							scores = map[int][]int{
 								0: []int{},
 								1: []int{},
