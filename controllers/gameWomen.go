@@ -253,7 +253,7 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 	}
 	client := &http.Client{Transport: tr}
 	url := fmt.Sprintf("https://www.tennisexplorer.com/results/?type=wta-single&year=%d&month=%s&day=%d", year, _month, day)
-	url = "https://www.tennisexplorer.com/results/?type=wta-single&year=2020&month=02&day=16"
+	//url = "https://www.tennisexplorer.com/results/?type=wta-single&year=2020&month=02&day=16"
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36")
 	res, err := client.Do(req)
