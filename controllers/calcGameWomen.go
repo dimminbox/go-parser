@@ -146,7 +146,13 @@ func CalcPlayer(player int) (oddAvgMy float32, count int) {
 				rating = item.Player1Rating
 				ratingDate = item.Player1RatingDate
 			}
-			res := result / (float32)(rating)
+			if rating >= 1000 {
+				rating = 1000
+			}
+			
+			rat := (float64)(rating)
+			ratingMod := (float32)(rat*0.342020143 + math.Sqrt(50000*(1-(rat-1000)*(rat-1000)/1000/1000))*0.939692621)
+			res := result / ratingMod
 			oddAvgMy += res
 			count++
 			fmt.Printf("%s - %s, score %s, result %0.2f, value %0.7f, rating %d, ratingDate %+v \n", item.Player1Name, item.Player2Name, item.Scores, result, res, rating, ratingDate)
