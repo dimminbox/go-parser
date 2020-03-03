@@ -244,7 +244,14 @@ func parserGamesWomenDay(year int, month int, day int) (games []model.WomenGame)
 	} else {
 		_month = fmt.Sprintf("0%d", month)
 	}
-	dateCur, _ := time.Parse(time.RFC3339, fmt.Sprintf("%d-%s-%dT00:00:01Z", year, _month, day))
+
+	var _day string
+	if day > 9 {
+		_day = fmt.Sprintf("%d", day)
+	} else {
+		_day = fmt.Sprintf("0%d", day)
+	}
+	dateCur, _ := time.Parse(time.RFC3339, fmt.Sprintf("%d-%s-%sT00:00:01Z", year, _month, _day))
 
 	games = []model.WomenGame{}
 	tr := &http.Transport{
